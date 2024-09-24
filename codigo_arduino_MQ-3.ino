@@ -10,12 +10,17 @@ const int mq3Pin = A0;
 // Variáveis para armazenar o valor do sensor e concentração
 int sensorValue;
 float alcoholPPM;
+float alcoholMgL;  // Variável para armazenar o valor de etanol em mg/L
 
 // PPM normal medido em condições sem etanol (valor de referência)
 const float basePPM = 225;  // Condição normal sem etanol
 
-// Limite de álcool em PPM para determinar intoxicação
-const float intoxicationThreshold = 300;  // Ajuste com base na presença de etanol
+// Fatores de conversão
+const float ppmToMgL = 0.00133;  // Fator de conversão de PPM para mg/L
+
+// Limites de álcool em mg/L conforme a legislação brasileira
+const float intoxicationLimitProfessional = 0.2;  // Limite para motoristas profissionais
+const float intoxicationLimitRegular = 0.3;       // Limite para motoristas não profissionais
 
 void setup() {
   // Inicializa o display OLED
@@ -44,12 +49,18 @@ void loop() {
   float adjustedPPM = alcoholPPM - basePPM;
   if (adjustedPPM < 0) adjustedPPM = 0;  // Evitar valores negativos
 
-  // Exibe o valor do sensor e a concentração estimada no monitor serial
+  // Converte PPM ajustado para mg/L
+  alcoholMgL = adjustedPPM * ppmToMgL;
+
+  // Exibe o valor do sensor, concentração de álcool ajustada (PPM) e valor em mg/L no monitor serial
   Serial.print("Valor do sensor: ");
   Serial.print(sensorValue);
   Serial.print("\tConcentracao de Alcool Ajustada: ");
   Serial.print(adjustedPPM);
-  Serial.println(" PPM");
+  Serial.print(" PPM");
+  Serial.print("\tConcentracao de Alcool: ");
+  Serial.print(alcoholMgL);
+  Serial.println(" mg/L");
 
   // Limpa o buffer do display
   u8g2.clearBuffer();
@@ -63,14 +74,21 @@ void loop() {
   u8g2.print("Valor: ");
   u8g2.print(sensorValue);
 
-  // Verifica se o nível de álcool ajustado excede o limite definido
-  if (adjustedPPM > (intoxicationThreshold - basePPM)) {
-    // Exibe uma mensagem dizendo que a pessoa está alcoolizada
-    u8g2.setCursor(0, 55);
+  // Exibe a concentração de álcool em mg/L no display OLED
+  u8g2.setCursor(0, 55);
+  u8g2.print("Alcool: ");
+  u8g2.print(alcoholMgL, 2);  // Exibe com 2 casas decimais
+  u8g2.print(" mg/L");
+
+  // Verifica os limites conforme as leis brasileiras e exibe o status
+  if (alcoholMgL > intoxicationLimitRegular) {
+    u8g2.setCursor(0, 70);
     u8g2.print("Status: Bebado!");
+  } else if (alcoholMgL > intoxicationLimitProfessional) {
+    u8g2.setCursor(0, 70);
+    u8g2.print("Status: Motorista Prof.");
   } else {
-    // Exibe uma mensagem dizendo que a pessoa está sóbria
-    u8g2.setCursor(0, 55);
+    u8g2.setCursor(0, 70);
     u8g2.print("Status: Sobrio");
   }
 
