@@ -1,8 +1,8 @@
 #include <Wire.h>
 #include <U8g2lib.h>
 
-// Inicializa o display OLED
-U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
+// Inicializa o display OLED com I2C via software (pode ajustar os pinos conforme necessário)
+U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, /* clock=*/ SCL, /* data=*/ SDA, /* reset=*/ U8X8_PIN_NONE);
 
 // Pino do sensor MQ-3
 const int mq3Pin = A0;
@@ -18,10 +18,6 @@ const float basePPM = 225;  // Condição normal sem etanol
 // Fatores de conversão
 const float ppmToMgL = 0.00133;  // Fator de conversão de PPM para mg/L
 
-// Limites de álcool em mg/L conforme a legislação brasileira
-const float intoxicationLimitProfessional = 0.2;  // Limite para motoristas profissionais
-const float intoxicationLimitRegular = 0.3;       // Limite para motoristas não profissionais
-
 void setup() {
   // Inicializa o display OLED
   u8g2.begin();
@@ -35,7 +31,7 @@ void setup() {
   u8g2.drawStr(10, 30, "Iniciando...");
   u8g2.sendBuffer();
   
-  delay(2000); // Pausa para exibir a mensagem inicial
+  delay(1000); // Pausa breve para exibir a mensagem inicial
 }
 
 void loop() {
@@ -65,32 +61,19 @@ void loop() {
   // Limpa o buffer do display
   u8g2.clearBuffer();
 
-  // Exibe o valor do sensor no display OLED
+  // Exibe o nome do sensor no display OLED
   u8g2.setFont(u8g2_font_ncenB08_tr);  // Define a fonte
   u8g2.drawStr(0, 20, "SENSOR MQ-3");
 
-  // Exibe o valor analógico do sensor
+  // Exibe o valor em PPM no display OLED
   u8g2.setCursor(0, 40);
-  u8g2.print("Valor: ");
-  u8g2.print(sensorValue);
+  u8g2.print("PPM: ");
+  u8g2.print(adjustedPPM);
 
   // Exibe a concentração de álcool em mg/L no display OLED
   u8g2.setCursor(0, 55);
-  u8g2.print("Alcool: ");
+  u8g2.print("mg/L: ");
   u8g2.print(alcoholMgL, 2);  // Exibe com 2 casas decimais
-  u8g2.print(" mg/L");
-
-  // Verifica os limites conforme as leis brasileiras e exibe o status
-  if (alcoholMgL > intoxicationLimitRegular) {
-    u8g2.setCursor(0, 70);
-    u8g2.print("Status: Bebado!");
-  } else if (alcoholMgL > intoxicationLimitProfessional) {
-    u8g2.setCursor(0, 70);
-    u8g2.print("Status: Motorista Prof.");
-  } else {
-    u8g2.setCursor(0, 70);
-    u8g2.print("Status: Sobrio");
-  }
 
   // Atualiza o display
   u8g2.sendBuffer();
